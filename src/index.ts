@@ -374,7 +374,7 @@ client.on(Events.MessageCreate, async (message) => {
       return message.reply(reply);
     }
 
-    if (content === `${PREFIX}help`) {
+    if (content === `${PREFIX}h`) {
       const helpMessage = `
     **📜 Economy Bot Commands**
 
