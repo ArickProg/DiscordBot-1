@@ -1,0 +1,53 @@
+# Node modules (should never be committed)
+node_modules/
+
+# Bun's lock file (should be committed, but ignore cache)
+.bun/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.*.local
+
+# TypeScript build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# VS Code settings
+.vscode/
+
+# IDEs
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# macOS specific
+.AppleDouble
+.LSOverride
+
+# Windows specific
+ehthumbs.db
+Desktop.ini
+
+# Optional Bun specific cache (safe to ignore)
+.bun-install-cache/
+
+# Git
+*.orig

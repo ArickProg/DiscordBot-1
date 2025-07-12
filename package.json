@@ -1,0 +1,17 @@
+{
+  "name": "discordbot#1",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "start": "bun run src/index.ts",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.0.1"
+  }
+}
