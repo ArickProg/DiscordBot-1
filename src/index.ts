@@ -243,7 +243,7 @@ client.on(Events.MessageCreate, async (message) => {
     }
 
     // COINFLIP
-    if (content.startsWith(`${PREFIX}coinflip`)) {
+    if (content.startsWith(`${PREFIX}coinflip`)) || (content.startsWith(`${PREFIX}cf`)) {
       const now = Date.now();
       const last = cooldowns[userId]?.coinflip ?? 0;
 
@@ -286,7 +286,7 @@ client.on(Events.MessageCreate, async (message) => {
 
 
   // LEADERBOARD
-  if (content === `${PREFIX}eclb`) {
+  if (content === `${PREFIX}eclb`) || (content === `${PREFIX}economyleaderboard`) || (content === `${PREFIX}economylb`) {
     const sorted = Object.entries(balances)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 10);
@@ -379,14 +379,14 @@ client.on(Events.MessageCreate, async (message) => {
     **📜 Economy Bot Commands**
 
     💰 **Economy:**
-    \`${PREFIX}balance [@user]\` – Check your or someone else's balance
+    \`${PREFIX}balance [@user]\` or \`${PREFIX}bal [@user]\` – Check your or someone else's balance
     \`${PREFIX}daily\` – Claim daily coins
     \`${PREFIX}weekly\` – Claim weekly reward
     \`${PREFIX}beg\` – Beg for coins
     \`${PREFIX}give @user <amount>\` – Give coins to another user
 
     🎰 **Gambling:**
-    \`${PREFIX}coinflip <amount> <heads/tails or h/t>\` – Flip a coin and gamble coins
+    \`${PREFIX}coinflip <amount> <heads/tails or h/t>\` or \`${PREFIX}cf <amount> <heads/tails or h/t>\` – Flip a coin and gamble coins
     \`${PREFIX}slots <amount>\` – Spin the slot machine
 
     🛒 **Shop & Inventory:**
@@ -395,7 +395,7 @@ client.on(Events.MessageCreate, async (message) => {
     \`${PREFIX}inventory\` – See your owned items
 
     📈 **Leaderboard:**
-    \`${PREFIX}eclb\` – View top richest users
+    \`${PREFIX}eclb\` or \`${PREFIX}economyleaderboard\` or \`${PREFIX}economylb\` – View top richest users
       `;
 
       return message.reply(helpMessage);
