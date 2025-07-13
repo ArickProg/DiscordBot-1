@@ -2,6 +2,7 @@ import { Client, Events, GatewayIntentBits, PermissionsBitField } from 'discord.
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import { Collection, Invite } from 'discord.js';
 
 dotenv.config();
 
@@ -17,6 +18,163 @@ const PREFIX = '$';
 const BALANCE_FILE = path.join(__dirname, 'balances.json');
 const COOLDOWN_FILE = path.join(__dirname, 'cooldowns.json');
 const INVENTORY_FILE = path.join(__dirname, 'inventories.json');
+const invites = new Map<string, Collection<string, Invite>>();
+const inviteCooldowns: Record<string, number> = {};
+const PENDING_FILE = path.join(__dirname, 'pendingInvites.json');
+let pendingInvites: Record<string, { inviterId: string; joinedAt: number }> = fs.existsSync(PENDING_FILE)
+  ? JSON.parse(fs.readFileSync(PENDING_FILE, 'utf-8'))
+  : {};
+
+const savePendingInvites = () => {
+  fs.writeFileSync(PENDING_FILE, JSON.stringify(pendingInvites, null, 2));
+};
+
+
+client.on(Events.GuildMemberAdd, async (member) => {
+  const cachedInvites = invites.get(member.guild.id);
+  const newInvites = await member.guild.invites.fetch().catch(() => null);
+  if (!cachedInvites || !newInvites) return;
+
+  const invite = newInvites.find(i => {
+    const old = cachedInvites.get(i.code);
+    const invite = newInvites.find(i => {
+      const old = cachedInvites.get(i.code);
+      return old && typeof i.uses === 'number' && typeof old.uses === 'number' && i.uses > old.uses;
+    });
+  });
+
+  invites.set(member.guild.id, newInvites);
+
+  if (!invite || !invite.inviter) return;
+
+  pendingInvites[member.id] = {
+    inviterId: invite.inviter.id,
+    joinedAt: Date.now(),
+  };
+
+  savePendingInvites();
+});
+
+client.on(Events.ClientReady, async () => {
+  console.log(`✅ Logged in as ${client.user?.tag}`);
+
+  // Load initial invites
+  for (const [id, guild] of client.guilds.cache) {
+    const inviteList = await guild.invites.fetch().catch(() => null);
+    if (inviteList) invites.set(guild.id, inviteList);
+  }
+
+  // Check for 2-day old members
+  const now = Date.now();
+  const twoDays = 2 * 24 * 60 * 60 * 1000;
+
+  for (const [memberId, data] of Object.entries(pendingInvites)) {
+    const { inviterId, joinedAt } = data;
+
+    if (now - joinedAt >= twoDays) {
+      try {
+        const guild = client.guilds.cache.find(g => g.members.cache.has(memberId));
+        const member = guild?.members.cache.get(memberId) ?? await guild?.members.fetch(memberId);
+        if (!member) {
+          // If member already left, don't reward
+          delete pendingInvites[memberId];
+          savePendingInvites();
+          continue;
+        }
+
+        const reward = Math.floor(Math.random() * (50000 - 25000 + 1)) + 25000;
+        balances[inviterId] = (balances[inviterId] ?? 0) + reward;
+        saveBalances();
+
+        const inviterUser = await client.users.fetch(inviterId);
+        await inviterUser.send(`🎉 You earned **${reward}** coins for inviting **${member.user.tag}** (stayed 2+ days).`);
+
+        delete pendingInvites[memberId];
+        savePendingInvites();
+      } catch {
+        // skip if error
+      }
+    }
+  }
+});
+
+
+
+
+client.on('ready', async () => {
+  for (const [guildId, guild] of client.guilds.cache) {
+    const inviteList = await guild.invites.fetch();
+    invites.set(guildId, inviteList);
+  }
+  console.log('✅ Invite tracking ready.');
+});
+client.on('guildMemberAdd', async (member) => {
+  const guild = member.guild;
+  const oldInvites = invites.get(guild.id);
+  const newInvites = await guild.invites.fetch();
+
+  invites.set(guild.id, newInvites);
+
+  const invite = newInvites.find(i => {
+    const old = oldInvites?.get(i.code);
+    return old && typeof i.uses === 'number' && typeof old.uses === 'number' && i.uses > old.uses;
+  });
+
+  if (!invite || !invite.inviter) return;
+
+  const inviterId = invite.inviter.id;
+  const now = Date.now();
+  const lastUsed = inviteCooldowns[inviterId] ?? 0;
+
+  if (now - lastUsed < 60 * 1000) return; // 1 minute cooldown
+
+  const reward = Math.floor(Math.random() * (50000 - 25000 + 1)) + 25000;
+  balances[inviterId] = (balances[inviterId] ?? 0) + reward;
+  inviteCooldowns[inviterId] = now;
+  saveBalances();
+
+  try {
+    const user = await client.users.fetch(inviterId);
+    user.send(`🎁 You earned **${reward}** coins for inviting someone!`);
+  } catch (err) {
+    console.error(`Could not DM user ${inviterId}:`, err);
+  }
+});
+
+client.on(Events.GuildMemberAdd, async (member) => {
+  const cachedInvites = invites.get(member.guild.id);
+  const newInvites = await member.guild.invites.fetch().catch(() => null);
+  if (!cachedInvites || !newInvites) return;
+
+  const invite = newInvites.find(i => {
+    const old = cachedInvites.get(i.code);
+    return old && typeof i.uses === 'number' && typeof old.uses === 'number' && i.uses > old.uses;
+  });
+
+  invites.set(member.guild.id, newInvites);
+
+  if (!invite || !invite.inviter) return;
+
+  const inviterId = invite.inviter.id;
+  const now = Date.now();
+  const cooldown = 60 * 1000; // 1 minute
+
+  if (inviteCooldowns[inviterId] && now - inviteCooldowns[inviterId] < cooldown) return;
+
+  const reward = Math.floor(Math.random() * (50000 - 25000 + 1)) + 25000;
+  balances[inviterId] = (balances[inviterId] ?? 0) + reward;
+  inviteCooldowns[inviterId] = now;
+  saveBalances();
+
+  try {
+    const inviterUser = await member.client.users.fetch(inviterId);
+    inviterUser.send(`🎉 You earned **${reward}** coins for inviting **${member.user.tag}** to the server!`);
+  } catch (err) {
+    console.warn(`Couldn't DM ${inviterId}`);
+  }
+});
+
+
 
 let inventories: Record<string, Record<string, number>> = {};
 
@@ -41,6 +199,22 @@ const shopItems2 = [
 
 let balances: Record<string, number> = {};
 let cooldowns: Record<string, { daily?: number; weekly?: number; beg?: number; slots?: number; coinflip?: number }> = {};
+
+const CLANS_FILE = path.join(__dirname, 'clans.json');
+let clans: Record<string, { owner: string; coLeaders: string[], elders: string[], members: string[], private?: boolean }> = {};
+
+if (fs.existsSync(CLANS_FILE)) {
+  try {
+    clans = JSON.parse(fs.readFileSync(CLANS_FILE, 'utf-8'));
+  } catch {
+    clans = {};
+  }
+}
+
+const saveClans = () => {
+  fs.writeFileSync(CLANS_FILE, JSON.stringify(clans, null, 2));
+};
+
 
 if (fs.existsSync(BALANCE_FILE)) {
   try {
@@ -379,6 +553,11 @@ client.on(Events.MessageCreate, async (message) => {
 
       return message.reply(reply);
     }
+
+
+
+
+    // HELP
 
     if (content === `${PREFIX}h`) {
       const helpMessage = `
