@@ -85,7 +85,7 @@ client.on(Events.MessageCreate, async (message) => {
   const userId = message.author.id;
 
   // BALANCE
-  if (content.startsWith(`${PREFIX}balance`)) {
+  if (content.startsWith(`${PREFIX}balance`)) || (content.startsWith(`${PREFIX}bal`)) {
     const mentionedUser = message.mentions.users.first();
     const targetUser = mentionedUser ?? message.author;
     const targetId = targetUser.id;
