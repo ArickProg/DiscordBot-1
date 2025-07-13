@@ -85,7 +85,7 @@ client.on(Events.MessageCreate, async (message) => {
   const userId = message.author.id;
 
   // BALANCE
-  if (content.startsWith(`${PREFIX}balance`)) || (content.startsWith(`${PREFIX}bal`)) {
+  if (content.startsWith(`${PREFIX}balance`) || content.startsWith(`${PREFIX}bal`)) {
     const mentionedUser = message.mentions.users.first();
     const targetUser = mentionedUser ?? message.author;
     const targetId = targetUser.id;
@@ -243,68 +243,74 @@ client.on(Events.MessageCreate, async (message) => {
     }
 
     // COINFLIP
-    if (content.startsWith(`${PREFIX}coinflip`)) || (content.startsWith(`${PREFIX}cf`)) {
-      const now = Date.now();
-      const last = cooldowns[userId]?.coinflip ?? 0;
+    if (content.startsWith(`${PREFIX}coinflip`) || content.startsWith(`${PREFIX}cf`)) {
+  const now = Date.now();
+  const last = cooldowns[userId]?.coinflip ?? 0;
 
-      if (now - last < 5000) {
-        return message.reply(`🕓 Wait a few seconds before flipping again.`);
-      }
+  if (now - last < 5000) {
+    return message.reply(`🕓 Wait a few seconds before flipping again.`);
+  }
 
-      const args = content.slice(PREFIX.length + 'coinflip'.length).trim().split(/ +/);
-      const amount = Number(args[0]);
-      const choice = args[1]?.toLowerCase();
+  const args = content.slice(PREFIX.length + (content.startsWith(`${PREFIX}cf`) ? 'cf'.length : 'coinflip'.length)).trim().split(/ +/);
+  const amount = Number(args[0]);
+  const choice = args[1]?.toLowerCase();
 
-      if (!amount || isNaN(amount) || amount <= 0) {
-        return message.reply(`❌ Enter a valid amount to bet.`);
-      }
+  if (!amount || isNaN(amount) || amount <= 0) {
+    return message.reply(`❌ Enter a valid amount to bet.`);
+  }
 
-      if (amount > 100000) {
-        return message.reply(`❌ The maximum bet is **100,000** coins.`);
-      }
+  if (amount > 100000) {
+    return message.reply(`❌ The maximum bet is **100,000** coins.`);
+  }
 
-      if (!['h', 'heads', 't', 'tails'].includes(choice ?? '')) {
-        return message.reply(`❌ Please choose \`heads\` (or \`h\`) or \`tails\` (or \`t\`).`);
-      }
+  if (!['h', 'heads', 't', 'tails'].includes(choice ?? '')) {
+    return message.reply(`❌ Please choose \`heads\` (or \`h\`) or \`tails\` (or \`t\`).`);
+  }
 
-      if ((balances[userId] ?? 0) < amount) {
-        return message.reply('❌ You don’t have enough coins.');
-      }
+  if ((balances[userId] ?? 0) < amount) {
+    return message.reply('❌ You don’t have enough coins.');
+  }
 
-      const userGuess = ['h', 'heads'].includes(choice ?? '') ? 'heads' : 'tails';
-      const result = Math.random() < 0.5 ? 'heads' : 'tails';
-      const win = userGuess === result;
+  const userGuess = ['h', 'heads'].includes(choice ?? '') ? 'heads' : 'tails';
+  const result = Math.random() < 0.5 ? 'heads' : 'tails';
+  const win = userGuess === result;
 
-      balances[userId] = (balances[userId] ?? 0) + (win ? amount : -amount);
-      cooldowns[userId] = { ...cooldowns[userId], coinflip: now };
-      saveBalances(); saveCooldowns();
+  balances[userId] = (balances[userId] ?? 0) + (win ? amount : -amount);
+  cooldowns[userId] = { ...cooldowns[userId], coinflip: now };
+  saveBalances(); saveCooldowns();
 
-      return message.reply(`🪙 It landed on **${result}**!\n${win ? `🎉 You won **${amount}** coins!` : `💀 You lost **${amount}** coins.`}`);
-    }
+  return message.reply(`🪙 It landed on **${result}**!\n${win ? `🎉 You won **${amount}** coins!` : `💀 You lost **${amount}** coins.`}`);
+}
+
 
 
 
 
   // LEADERBOARD
-  if (content === `${PREFIX}eclb`) || (content === `${PREFIX}economyleaderboard`) || (content === `${PREFIX}economylb`) {
-    const sorted = Object.entries(balances)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 10);
+  if (
+  content === `${PREFIX}eclb` ||
+  content === `${PREFIX}economyleaderboard` ||
+  content === `${PREFIX}economylb`
+) {
+  const sorted = Object.entries(balances)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10);
 
-    let leaderboard = '**🏆 Top 10 Richest Users**\n\n';
+  let leaderboard = '**🏆 Top 10 Richest Users**\n\n';
 
-    for (let i = 0; i < sorted.length; i++) {
-      const [userId, balance] = sorted[i] as [string, number];
-      try {
-        const user = await client.users.fetch(userId);
-        leaderboard += `**${i + 1}.** ${user.username} — 💰 **${balance}** coins\n`;
-      } catch {
-        leaderboard += `**${i + 1}.** Unknown User — 💰 **${balance}** coins\n`;
-      }
+  for (let i = 0; i < sorted.length; i++) {
+    const [userId, balance] = sorted[i] as [string, number];
+    try {
+      const user = await client.users.fetch(userId);
+      leaderboard += `**${i + 1}.** ${user.username} — 💰 **${balance}** coins\n`;
+    } catch {
+      leaderboard += `**${i + 1}.** Unknown User — 💰 **${balance}** coins\n`;
     }
-
-    return message.reply(leaderboard);
   }
+
+  return message.reply(leaderboard);
+}
+
 
   // SHOP
 
