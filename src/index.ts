@@ -449,7 +449,7 @@ if (content.startsWith(`${PREFIX}coinflip`) || content.startsWith(`${PREFIX}cf`)
   const userGuess = ['h', 'heads'].includes(choice ?? '') ? 'heads' : 'tails';
 
   // Biased win system: 70% chance the user wins
-  const win = Math.random() < 0.7;
+  const win = Math.random() < 0.5;
   const result = win ? userGuess : (userGuess === 'heads' ? 'tails' : 'heads');
 
   balances[userId] = (balances[userId] ?? 0) + (win ? amount : -amount);
