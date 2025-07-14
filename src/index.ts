@@ -1182,7 +1182,6 @@ if (content.startsWith(`${PREFIX}clan kick`)) {
     📈 **Leaderboard:**
     \`${PREFIX}eclb\` or \`${PREFIX}economyleaderboard\` or \`${PREFIX}economylb\` – View top richest users
     \`${PREFIX}clan lb\` – View top clans
-      `;
 
     📈 **Clans:**
     \`${PREFIX}clan create <clan_name>\` – Create your own clan
@@ -1197,6 +1196,7 @@ if (content.startsWith(`${PREFIX}clan kick`)) {
     \`${PREFIX}clan disband\` – Disband your clan
     \`${PREFIX}clan kick <mention>\` – Kick your clan members
     \`${PREFIX}clan profile\` – View your clan profile
+      `;
 
       return message.reply(helpMessage);
     }
