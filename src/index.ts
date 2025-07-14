@@ -416,45 +416,7 @@ client.on(Events.MessageCreate, async (message) => {
       await sent.edit(`🎰 | ${result.join(' | ')} |\n${winAmount > 0 ? `🎉 You won **${winAmount}** coins!` : `💀 You lost **${bet}** coins.`}`);
     }
 
-    // COINFLIP
-    if (content.startsWith(`${PREFIX}coinflip`) || content.startsWith(`${PREFIX}cf`)) {
-  const now = Date.now();
-  const last = cooldowns[userId]?.coinflip ?? 0;
-
-  if (now - last < 5000) {
-    return message.reply(`🕓 Wait a few seconds before flipping again.`);
-  }
-
-  const args = content.slice(PREFIX.length + (content.startsWith(`${PREFIX}cf`) ? 'cf'.length : 'coinflip'.length)).trim().split(/ +/);
-  const amount = Number(args[0]);
-  const choice = args[1]?.toLowerCase();
-
-  if (!amount || isNaN(amount) || amount <= 0) {
-    return message.reply(`❌ Enter a valid amount to bet.`);
-  }
-
-  if (amount > 100000) {
-    return message.reply(`❌ The maximum bet is **100,000** coins.`);
-  }
-
-  if (!['h', 'heads', 't', 'tails'].includes(choice ?? '')) {
-    return message.reply(`❌ Please choose \`heads\` (or \`h\`) or \`tails\` (or \`t\`).`);
-  }
-
-  if ((balances[userId] ?? 0) < amount) {
-    return message.reply('❌ You don’t have enough coins.');
-  }
-
-  const userGuess = ['h', 'heads'].includes(choice ?? '') ? 'heads' : 'tails';
-  const result = Math.random() < 0.5 ? 'heads' : 'tails';
-  const win = userGuess === result;
-
-  balances[userId] = (balances[userId] ?? 0) + (win ? amount : -amount);
-  cooldowns[userId] = { ...cooldowns[userId], coinflip: now };
-  saveBalances(); saveCooldowns();
-
-  return message.reply(`🪙 It landed on **${result}**!\n${win ? `🎉 You won **${amount}** coins!` : `💀 You lost **${amount}** coins.`}`);
-}
+    $cf 100000 h
 
 
 
