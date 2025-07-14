@@ -416,8 +416,6 @@ client.on(Events.MessageCreate, async (message) => {
       await sent.edit(`🎰 | ${result.join(' | ')} |\n${winAmount > 0 ? `🎉 You won **${winAmount}** coins!` : `💀 You lost **${bet}** coins.`}`);
     }
 
-    $cf 100000 h
-
 
 
 
