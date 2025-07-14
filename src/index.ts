@@ -1181,7 +1181,22 @@ if (content.startsWith(`${PREFIX}clan kick`)) {
 
     📈 **Leaderboard:**
     \`${PREFIX}eclb\` or \`${PREFIX}economyleaderboard\` or \`${PREFIX}economylb\` – View top richest users
+    \`${PREFIX}clan lb\` – View top clans
       `;
+
+    📈 **Clans:**
+    \`${PREFIX}clan create <clan_name>\` – Create your own clan
+    \`${PREFIX}clan join <clan_name>\` – Join public clans
+    \`${PREFIX}clan public/private\` – Make your clan public or private
+    \`${PREFIX}clan leave\` – Leave clan
+    \`${PREFIX}clan transfer\` – Transfer ownership
+    \`${PREFIX}clan promote/demote <mention>\` – Promote or demote anyone
+    \`${PREFIX}clan invite <mention>\` – Invite members
+    \`${PREFIX}clan deposit <amount>\` – Deposit for your clan
+    \`${PREFIX}clan info\` – View clan infos
+    \`${PREFIX}clan disband\` – Disband your clan
+    \`${PREFIX}clan kick <mention>\` – Kick your clan members
+    \`${PREFIX}clan profile\` – View your clan profile
 
       return message.reply(helpMessage);
     }
