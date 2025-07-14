@@ -1118,6 +1118,42 @@ if (content.startsWith(`${PREFIX}clan kick`)) {
   return message.reply(`✅ <@${targetId}> has been kicked from **${clan.name}**.`);
 }
 
+  //CLAN DISBAND
+  if (content.startsWith(`${PREFIX}clan disband`)) {
+  const clanEntry = Object.entries(clans).find(([_, clan]) => clan.owner === userId);
+
+  if (!clanEntry) {
+    return message.reply("❌ You are not the owner of any clan.");
+  }
+
+  const [clanName, clan] = clanEntry;
+
+  // Delete the clan
+  delete clans[clanName];
+  saveClans();
+
+  // Optional: Remove clan from all users if you're tracking that
+  // If you use a `users` object to track which clan someone is in:
+  /*
+  const allMembers = [
+    clan.owner,
+    ...clan.coLeaders,
+    ...clan.elders,
+    ...clan.members
+  ];
+
+  for (const id of allMembers) {
+    if (users[id]) {
+      delete users[id].clan;
+    }
+  }
+  saveUsers();
+  */
+
+  return message.reply(`⚠️ **${clanName}** has been disbanded and removed from the server.`);
+}
+
+
 
 
 
