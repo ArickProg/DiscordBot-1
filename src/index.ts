@@ -389,50 +389,77 @@ client.on(Events.MessageCreate, async (message) => {
   // SLOTS
     const slotEmojis = ['🍒', '🍋', '🍇', '🍊', '💎', '7️⃣'];
 
-    if (content.startsWith(`${PREFIX}slots`)) {
-      const now = Date.now();
-      const last = cooldowns[userId]?.slots ?? 0;
+if (content.startsWith(`${PREFIX}slots`)) {
+  const now = Date.now();
+  const last = cooldowns[userId]?.slots ?? 0;
 
-      if (now - last < 5000) {
-        return message.reply(`🕓 Wait before spinning again.`);
-      }
+  if (now - last < 5000) {
+    return message.reply(`🕓 Wait before spinning again.`);
+  }
 
-      const parts = content.split(' ');
-      const bet = Number(parts[1]);
+  const parts = content.split(' ');
+  const bet = Number(parts[1]);
 
-      if (!bet || isNaN(bet) || bet <= 0 || bet > 250000) {
-        return message.reply('❌ Bet must be between 1 and 250,000.');
-      }
+  if (!bet || isNaN(bet) || bet <= 0 || bet > 250000) {
+    return message.reply('❌ Bet must be between 1 and 250,000.');
+  }
 
-      if ((balances[userId] ?? 0) < bet) {
-        return message.reply('❌ You don’t have enough coins.');
-      }
+  if ((balances[userId] ?? 0) < bet) {
+    return message.reply('❌ You don’t have enough coins.');
+  }
 
-      const placeholder = '🔄 | 🔄 | 🔄';
-      const sent = await message.reply(`🎰 Spinning...\n${placeholder}`);
-      await new Promise(res => setTimeout(res, 1000));
+  const placeholder = '🔄 | 🔄 | 🔄';
+  const sent = await message.reply(`🎰 Spinning...\n${placeholder}`);
+  await new Promise(res => setTimeout(res, 1000));
 
-      const spin = () => slotEmojis[Math.floor(Math.random() * slotEmojis.length)];
+  const spin = () => slotEmojis[Math.floor(Math.random() * slotEmojis.length)];
 
-      const result = [spin(), spin(), spin()];
+  let result: string[];
 
-      let winAmount = 0;
-      if (result[0] === result[1] && result[1] === result[2]) {
-        winAmount = bet * 3;
-      } else if (result[0] === result[1] || result[1] === result[2] || result[0] === result[2]) {
-        winAmount = bet * 2;
-      } else {
-        winAmount = -bet;
-      }
+  const outcome = Math.random();
 
-      balances[userId] = (balances[userId] ?? 0) + winAmount;
-      cooldowns[userId] = { ...cooldowns[userId], slots: now };
+  if (outcome < 1 / 3) {
+    // Triple match
+    const emoji = spin();
+    result = [emoji, emoji, emoji];
+  } else if (outcome < 2 / 3) {
+    // Double match
+    const emoji1 = spin();
+    let emoji2 = spin();
+    while (emoji2 === emoji1) emoji2 = spin(); // make sure it's different for the 3rd
+    const matchType = Math.floor(Math.random() * 3);
+    if (matchType === 0) result = [emoji1, emoji1, emoji2];
+    else if (matchType === 1) result = [emoji2, emoji1, emoji1];
+    else result = [emoji1, emoji2, emoji1];
+  } else {
+    // No match
+    do {
+      result = [spin(), spin(), spin()];
+    } while (
+      result[0] === result[1] ||
+      result[1] === result[2] ||
+      result[0] === result[2]
+    );
+  }
 
-      saveBalances();
-      saveCooldowns();
+  let winAmount = 0;
+  if (result[0] === result[1] && result[1] === result[2]) {
+    winAmount = bet * 3;
+  } else if (result[0] === result[1] || result[1] === result[2] || result[0] === result[2]) {
+    winAmount = bet * 2;
+  } else {
+    winAmount = -bet;
+  }
 
-      await sent.edit(`🎰 | ${result.join(' | ')} |\n${winAmount > 0 ? `🎉 You won **${winAmount}** coins!` : `💀 You lost **${bet}** coins.`}`);
-    }
+  balances[userId] = (balances[userId] ?? 0) + winAmount;
+  cooldowns[userId] = { ...cooldowns[userId], slots: now };
+
+  saveBalances();
+  saveCooldowns();
+
+  await sent.edit(`🎰 | ${result.join(' | ')} |\n${winAmount > 0 ? `🎉 You won **${winAmount}** coins!` : `💀 You lost **${bet}** coins.`}`);
+}
+
 
   // COINFLIP
 if (content.startsWith(`${PREFIX}coinflip`) || content.startsWith(`${PREFIX}cf`)) {
