@@ -22,6 +22,13 @@ const INVENTORY_FILE = path.join(__dirname, 'inventories.json');
 const invites = new Map<string, Collection<string, Invite>>();
 const inviteCooldowns: Record<string, number> = {};
 const CLAN_FILE = path.join(__dirname, 'clans.json');
+
+// Make sure the file exists before loading
+if (!fs.existsSync(CLAN_FILE)) {
+  fs.writeFileSync(CLAN_FILE, '{}');
+}
+
+// Load clans safely
 let clans: Record<string, {
   name: string;
   owner: string;
@@ -32,25 +39,19 @@ let clans: Record<string, {
   vault: number;
   goal: number;
   level: number;
-  contributions: Record<string, number>; // 👈 Add this line
-}> = fs.existsSync(CLAN_FILE)
-  ? JSON.parse(fs.readFileSync(CLAN_FILE, 'utf-8'))
-  : {};
+  contributions: Record<string, number>;
+}>;
 
-
-
-const CLANS_FILE = path.join(__dirname, 'clans.json');
-
-if (fs.existsSync(CLANS_FILE)) {
-  try {
-    clans = JSON.parse(fs.readFileSync(CLANS_FILE, 'utf-8'));
-  } catch {
-    clans = {};
-  }
+try {
+  const raw = fs.readFileSync(CLAN_FILE, 'utf-8');
+  clans = raw.trim() ? JSON.parse(raw) : {};
+} catch {
+  clans = {};
 }
 
+// Save function
 const saveClans = () => {
-  fs.writeFileSync(CLANS_FILE, JSON.stringify(clans, null, 2));
+  fs.writeFileSync(CLAN_FILE, JSON.stringify(clans, null, 2));
 };
 
 
