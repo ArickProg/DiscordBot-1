@@ -30,17 +30,33 @@ if (!fs.existsSync(CLAN_FILE)) {
 
 // Load clans safely
 let clans: Record<string, {
-  name: string;
-  owner: string;
-  coLeaders: string[];
-  elders: string[];
-  members: string[];
-  private: boolean;
-  vault: number;
-  goal: number;
-  level: number;
-  contributions: Record<string, number>;
+  name: string;                             // Display name of the clan
+  tag: string;                              // Stylized tag, e.g., ᶜʰᵃᵒˢ (used for nickname)
+  owner: string;                            // User ID of the clan owner
+  coLeaders: string[];                      // User IDs of co-leaders
+  elders: string[];                         // User IDs of elders
+  members: string[];                        // User IDs of normal members
+  private: boolean;                         // Whether the clan is private or public
+  vault: number;                            // Total coins in the clan vault
+  goal: number;                             // Goal amount to level up
+  level: number;                            // Clan level
+  contributions: Record<string, number>;    // User ID to amount contributed
+  createdAt: number;                        // Timestamp when the clan was created
+  description?: string;                     // Optional clan description
+  icon?: string;                            // Optional emoji/icon string like "⚔️"
 }>;
+
+async function setClanNickname(member: GuildMember, clanTag: string | null) {
+  const baseName = member.displayName.replace(/ᶜʰᵃᵒˢ|ᵈᵉᵛ|ᵖʳᵒ|ᶜˡᵃⁿ/gi, ''); // remove old tags if any
+  const newNick = clanTag ? `${baseName}${clanTag}` : baseName;
+
+  try {
+    await member.setNickname(newNick);
+  } catch (err) {
+    console.error(`Failed to set nickname for ${member.user.username}:`, err);
+  }
+}
+
 
 try {
   const raw = fs.readFileSync(CLAN_FILE, 'utf-8');
@@ -677,115 +693,134 @@ if (content.startsWith(`${PREFIX}coinflip`) || content.startsWith(`${PREFIX}cf`)
     //CLAN JOIN
 
     if (content.startsWith(`${PREFIX}clan join`)) {
-      const args = content.split(' ');
-      const clanName = args.slice(2).join(' ').trim();
+  const args = content.split(' ');
+  const clanName = args.slice(2).join(' ').trim();
 
-      if (!clanName) {
-        return message.reply('❌ Please provide the name of the clan you want to join.\nUsage: `$clan join <clan name>`');
-      }
+  if (!clanName) {
+    return message.reply('❌ Please provide the name of the clan you want to join.\nUsage: `$clan join <clan name>`');
+  }
 
-      const targetClanEntry = Object.entries(clans).find(
-        ([, clan]) => clan.name.toLowerCase() === clanName.toLowerCase()
-      );
+  // Find clan by name (case-insensitive)
+  const targetClanEntry = Object.entries(clans).find(
+    ([, clan]) => clan.name.toLowerCase() === clanName.toLowerCase()
+  );
 
-      if (!targetClanEntry) {
-        return message.reply(`❌ No clan found with the name **${clanName}**.`);
-      }
+  if (!targetClanEntry) {
+    return message.reply(`❌ No clan found with the name **${clanName}**.`);
+  }
 
-      const [clanKey, clan] = targetClanEntry;
+  const [clanKey, clan] = targetClanEntry;
 
-      // Check if the clan is private
-      if (clan.private) {
-        return message.reply(`🔒 **${clan.name}** is a private clan and cannot be joined without an invite.`);
-      }
+  // Check if the clan is private
+  if (clan.private) {
+    return message.reply(`🔒 **${clan.name}** is a private clan and cannot be joined without an invite.`);
+  }
 
-      // Check if user is already in a clan
-      const existingClan = Object.values(clans).find(c =>
-        [c.owner, ...c.coLeaders, ...c.elders, ...c.members].includes(userId)
-      );
+  // Check if user is already in a clan
+  const existingClan = Object.values(clans).find(c =>
+    [c.owner, ...c.coLeaders, ...c.elders, ...c.members].includes(userId)
+  );
 
-      if (existingClan) {
-        return message.reply('❌ You are already in a clan. Leave your current clan before joining another.');
-      }
+  if (existingClan) {
+    return message.reply('❌ You are already in a clan. Leave your current clan before joining another.');
+  }
 
-      // Add user to members list
-      clan.members.push(userId);
-      saveClans();
+  // Add user to members list
+  clan.members.push(userId);
+  saveClans();
 
-      return message.reply(`✅ You have successfully joined the clan **${clan.name}**!`);
+  // Update user's nickname with clan tag
+  const member = message.guild.members.cache.get(userId);
+  if (member) {
+    try {
+      await setClanNickname(member, clan.tag);
+    } catch (err) {
+      console.error(`Failed to set nickname for user ${userId}:`, err);
     }
+  }
+
+  return message.reply(`✅ You have successfully joined the clan **${clan.name}**!`);
+}
+
 
     //CLAN INVITE
 
     if (content.startsWith(`${PREFIX}clan invite`)) {
-      const mentionedUser = message.mentions.users.first();
-      const inviterId = message.author.id;
+  const mentionedUser = message.mentions.users.first();
+  const inviterId = message.author.id;
 
-      if (!mentionedUser) {
-        return message.reply(`❌ Please mention a user to invite.\nUsage: \`${PREFIX}clan invite @user\``);
-      }
+  if (!mentionedUser) {
+    return message.reply(`❌ Please mention a user to invite.\nUsage: \`${PREFIX}clan invite @user\``);
+  }
 
-      const userToInviteId = mentionedUser.id;
+  const userToInviteId = mentionedUser.id;
 
-      // Check if inviter is in a clan and is the owner
-      const inviterClanEntry = Object.entries(clans).find(
-        ([, c]) => c.owner === inviterId
-      );
+  const inviterClanEntry = Object.entries(clans).find(
+    ([, c]) => c.owner === inviterId
+  );
 
-      if (!inviterClanEntry) {
-        return message.reply('❌ You are not a clan owner. Only owners can invite users to private clans.');
-      }
+  if (!inviterClanEntry) {
+    return message.reply('❌ You are not a clan owner. Only owners can invite users to private clans.');
+  }
 
-      const [clanKey, clan] = inviterClanEntry;
+  const [clanKey, clan] = inviterClanEntry;
 
-      // Must be private clan to invite
-      if (!clan.private) {
-        return message.reply('❌ This command is only used for private clans.');
-      }
+  if (!clan.private) {
+    return message.reply('❌ This command is only used for private clans.');
+  }
 
-      // Already in a clan?
-      const alreadyInClan = Object.values(clans).some(c =>
-        [c.owner, ...c.coLeaders, ...c.elders, ...c.members].includes(userToInviteId)
-      );
+  const alreadyInClan = Object.values(clans).some(c =>
+    [c.owner, ...c.coLeaders, ...c.elders, ...c.members].includes(userToInviteId)
+  );
 
-      if (alreadyInClan) {
-        return message.reply(`❌ ${mentionedUser.username} is already in a clan.`);
-      }
+  if (alreadyInClan) {
+    return message.reply(`❌ ${mentionedUser.username} is already in a clan.`);
+  }
 
-      // Send invite message
-      const inviteMsg = await message.channel.send({
-        content: `📩 <@${userToInviteId}>, you have been invited to join the clan **${clan.name}** by <@${inviterId}>!\nReact with ☑️ to accept or ❌ to decline.`,
-      });
+  const inviteMsg = await message.channel.send({
+    content: `📩 <@${userToInviteId}>, you have been invited to join the clan **${clan.name}** by <@${inviterId}>!\nReact with ☑️ to accept or ❌ to decline.`,
+  });
 
-      await inviteMsg.react('☑️');
-      await inviteMsg.react('❌');
+  await inviteMsg.react('☑️');
+  await inviteMsg.react('❌');
 
-      // Set up collector
-      const filter = (reaction: any, user: any) =>
-        ['☑️', '❌'].includes(reaction.emoji.name) && user.id === userToInviteId;
+  const filter = (reaction: MessageReaction, user: User) =>
+    ['☑️', '❌'].includes(reaction.emoji.name ?? '') && user.id === userToInviteId;
 
-      const collector = inviteMsg.createReactionCollector({ filter, max: 1, time: 2 * 60 * 1000 });
+  const collector = inviteMsg.createReactionCollector({ filter, max: 1, time: 2 * 60 * 1000 });
 
-      collector.on('collect', async (reaction, user) => {
-        if (reaction.emoji.name === '☑️') {
-          clan.members.push(userToInviteId);
-          saveClans();
-          await inviteMsg.reply(`✅ <@${userToInviteId}> has joined the clan **${clan.name}**!`);
-        } else if (reaction.emoji.name === '❌') {
-          await inviteMsg.reply(`❌ <@${userToInviteId}> declined the clan invite.`);
+  collector.on('collect', async (reaction, user) => {
+    if (reaction.emoji.name === '☑️') {
+      clan.members.push(userToInviteId);
+      saveClans();
+
+      const member = message.guild.members.cache.get(userToInviteId);
+      if (member) {
+        try {
+          await setClanNickname(member, clan.tag);
+        } catch (err) {
+          console.error(`Failed to set nickname for ${member.user.tag}:`, err);
         }
-      });
+      }
 
-      collector.on('end', collected => {
-        if (collected.size === 0) {
-          inviteMsg.reply(`⌛ <@${userToInviteId}> did not respond in time. Invite expired.`);
-        }
-      });
-      collector.on('collect', async (reaction, user) => {
-        console.log(`Reaction received: ${reaction.emoji.name} from ${user.username}`);
-      });
-
+      await inviteMsg.reply(`✅ <@${userToInviteId}> has joined the clan **${clan.name}**!`);
+      await message.channel.send(`<@${inviterId}>, your invite was accepted!`);
+    } else if (reaction.emoji.name === '❌') {
+      await inviteMsg.reply(`❌ <@${userToInviteId}> declined the clan invite.`);
+      await message.channel.send(`<@${inviterId}>, your invite was declined.`);
     }
+    // Optionally clear reactions here or disable collector to prevent more reacts
+    collector.stop();
+  });
+
+  collector.on('end', (collected) => {
+    if (collected.size === 0) {
+      inviteMsg.reply(`⌛ <@${userToInviteId}> did not respond in time. Invite expired.`);
+      // Optionally notify inviter here
+    }
+  });
+}
+
 
     // CLAN DEMOTE/PROMOTE
       // $clan promote @user
@@ -1012,7 +1047,7 @@ if (content.startsWith(`${PREFIX}clan leave`)) {
     return message.reply("❌ You are not in a clan.");
   }
 
-  const [clanName, clan] = clanEntry;
+  const [clanKey, clan] = clanEntry;
 
   if (clan.owner === userId) {
     return message.reply("❌ You are the clan leader. You must transfer ownership or delete the clan to leave.");
@@ -1025,8 +1060,27 @@ if (content.startsWith(`${PREFIX}clan leave`)) {
 
   saveClans();
 
+  // Remove clan tag from nickname
+  const member = message.guild.members.cache.get(userId);
+  if (member) {
+    try {
+      await setClanNickname(member, null); // null removes clan tag from nickname
+    } catch (err) {
+      console.error(`Failed to remove clan tag from nickname of ${member.user.tag}:`, err);
+    }
+  }
+
   return message.reply(`✅ You have successfully left the clan **${clan.name}**.`);
 }
+
+  async function setClanNickname(member: GuildMember, clanTag: string | null) {
+  // Remove any existing clan tag (superscript letters) from the end
+  const baseName = member.displayName.replace(/[\u1d00-\u1d7f]+$/u, '').trim();
+  const newNick = clanTag ? `${baseName}${clanTag}` : baseName;
+
+  await member.setNickname(newNick);
+}
+
 
 //CLAN LB
 if (content.startsWith(`${PREFIX}clan lb`)) {
