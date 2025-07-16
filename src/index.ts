@@ -19,9 +19,11 @@ const PREFIX = '$';
 const BALANCE_FILE = path.join(__dirname, 'balances.json');
 const COOLDOWN_FILE = path.join(__dirname, 'cooldowns.json');
 const INVENTORY_FILE = path.join(__dirname, 'inventories.json');
+const CLAN_FILE = path.join(__dirname, 'clans.json');
 const invites = new Map<string, Collection<string, Invite>>();
 const inviteCooldowns: Record<string, number> = {};
-const CLAN_FILE = path.join(__dirname, 'clans.json');
+
+
 
 // Make sure the file exists before loading
 if (!fs.existsSync(CLAN_FILE)) {
