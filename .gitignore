@@ -52,7 +52,7 @@ Desktop.ini
 # Git
 *.orig
 
-balances.json
-clans.json
-cooldowns.json
+src/balances.json
+src/clans.json
+src/cooldowns.json
 
