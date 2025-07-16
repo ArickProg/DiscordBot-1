@@ -959,6 +959,53 @@ if (content.startsWith(`${PREFIX}coinflip`) || content.startsWith(`${PREFIX}cf`)
   return message.reply(embedMessage);
 }
 
+  // CLAN WEEKLY
+  if (content === `${PREFIX}clan weekly`) {
+  const now = Date.now();
+  const lastUsed = cooldowns[userId]?.clanWeekly ?? 0;
+  const WEEKLY_COOLDOWN = 7 * 24 * 60 * 60 * 1000;
+
+  if (now - lastUsed < WEEKLY_COOLDOWN) {
+    const remaining = WEEKLY_COOLDOWN - (now - lastUsed);
+    const hours = Math.floor(remaining / (1000 * 60 * 60));
+    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+    return message.reply(`🕓 You already claimed your clan weekly. Try again in **${hours}h ${minutes}m**.`);
+  }
+
+  // Find the user's clan
+  const clanEntry = Object.entries(clans).find(([, c]) =>
+    [c.owner, ...c.coLeaders, ...c.elders, ...c.members].includes(userId)
+  );
+
+  if (!clanEntry) {
+    return message.reply("❌ You are not in any clan.");
+  }
+
+  const [clanKey, clan] = clanEntry;
+
+  // Generate reward
+  const reward = Math.floor(Math.random() * (100000 - 50000 + 1)) + 50000;
+
+  // Add to clan vault
+  clan.vault += reward;
+
+  // Track user contribution
+  if (!clan.contributions[userId]) {
+    clan.contributions[userId] = 0;
+  }
+  clan.contributions[userId] += reward;
+
+  // Save cooldown
+  cooldowns[userId] = { ...cooldowns[userId], clanWeekly: now };
+
+  // Save data
+  saveClans();
+  saveCooldowns();
+
+  return message.reply(`🎁 You contributed **${reward.toLocaleString()}** coins to **${clan.name}**'s vault!`);
+}
+
+
 
       // CLAN DEPOSIT
       if (content.startsWith(`${PREFIX}clan deposit`)) {
