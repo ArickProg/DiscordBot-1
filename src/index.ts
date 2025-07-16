@@ -758,8 +758,12 @@ if (content.startsWith(`${PREFIX}coinflip`) || content.startsWith(`${PREFIX}cf`)
   const userToInviteId = mentionedUser.id;
 
   const inviterClanEntry = Object.entries(clans).find(
-    ([, c]) => c.owner === inviterId
+    ([, c]) =>
+      c.owner === inviterId ||
+      c.coLeaders.includes(inviterId) ||
+      c.elders.includes(inviterId)
   );
+
 
   if (!inviterClanEntry) {
     return message.reply('❌ You are not a clan owner. Only owners can invite users to private clans.');
