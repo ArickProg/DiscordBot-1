@@ -51,3 +51,8 @@ Desktop.ini
 
 # Git
 *.orig
+
+balances.json
+clans.json
+cooldowns.json
+
